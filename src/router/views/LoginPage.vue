@@ -105,7 +105,8 @@ export default {
           displayName: response.user.displayName,
         },
         authenticatorSelection: {
-          attachment: response.authenticatorSelection.attachment,
+          authenticatorAttachment:
+            response.authenticatorSelection.authenticatorAttachment,
           requireResidentKey:
             response.authenticatorSelection.requireResidentKey,
           residentKey: response.authenticatorSelection.residentKey,
@@ -115,6 +116,7 @@ export default {
         timeout: response.timeout,
         attestation: response.attestation,
       };
+      console.log("=== 전달 할 값 ===");
       console.log(publicKeyCredentialCreateOptions);
       const publicKeyCredential = await navigator.credentials.create({
         publicKey: publicKeyCredentialCreateOptions,
