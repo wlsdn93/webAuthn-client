@@ -10,7 +10,8 @@
       <button class="button--sign-in" @click="submit">Sign In</button>
     </form>
     <hr />
-    <button @click="startLogin">login</button>
+    <button class="button--auth" @click="regist">Regist Credential</button>
+    <button class="button--auth" @click="login">login</button>
   </div>
 </template>
 
@@ -37,10 +38,56 @@ export default {
       console.log(response.data);
       localStorage.setItem("userId", response.data);
     },
-    async startLogin() {
+    async login() {
       const response = (
         await this.$axios.get(
-          "http://localhost:8080/api/auth/credential/options",
+          "http://localhost:8080/api/auth/credential/request/options",
+          {}
+        )
+      ).data;
+      console.log("pubKeyCredReqOpts");
+      console.log(response);
+      const allowCredentials = new Array(response.allowCredentials)[0];
+      console.log("credentialId");
+      console.log(allowCredentials[0].id);
+      const publicKeyCredentialRequestOptions = {
+        challenge: Uint8Array.from(response.challenge, (c) => c.charCodeAt(0)),
+        allowCredentials: [
+          // {
+          //   id: Uint8Array.from(allowCredentials[0].id, (c) => c.charCodeAt(0)),
+          //   type: allowCredentials[0].type,
+          //   transports: [...allowCredentials[0].transports, "ble"],
+          // },
+        ],
+        timeout: response.timeout,
+        userVerification: "required",
+        rpId: response.rpId,
+      };
+      console.log(publicKeyCredentialRequestOptions);
+      const assertion = await navigator.credentials.get({
+        publicKey: publicKeyCredentialRequestOptions,
+      });
+
+      console.log(":::Assertion:::");
+      console.log(assertion);
+
+      this.$axios.post("http://localhost:8080/api/auth/credential/assertion", {
+        id: assertion.id,
+        authenticatorData: this.arrayBufferToBase64(
+          assertion.response.authenticatorData
+        ),
+        clientDataJSON: this.arrayBufferToBase64(
+          assertion.response.clientDataJSON
+        ),
+        signature: this.arrayBufferToBase64(assertion.response.signature),
+        userHandle: this.arrayBufferToBase64(assertion.response.userHandle),
+        type: assertion.type,
+      });
+    },
+    async regist() {
+      const response = (
+        await this.$axios.get(
+          "http://localhost:8080/api/auth/credential/creating/options",
           {}
         )
       ).data;
@@ -59,9 +106,10 @@ export default {
         },
         authenticatorSelection: {
           attachment: response.authenticatorSelection.attachment,
-          requireResidentKey: response.requireResidentKey,
-          residentKey: response.residentKey,
-          residentKeyRequired: response.residentKeyRequired,
+          requireResidentKey:
+            response.authenticatorSelection.requireResidentKey,
+          residentKey: response.authenticatorSelection.residentKey,
+          userVerification: response.authenticatorSelection.userVerification,
         },
         pubKeyCredParams: response.pubKeyCredParams,
         timeout: response.timeout,
@@ -73,7 +121,6 @@ export default {
       });
       console.log("=== credential ===");
       console.log(publicKeyCredential);
-      window.localStorage.setItem("publickeyCredential", publicKeyCredential);
 
       this.$axios.post(
         "http://localhost:8080/api/auth/credential/attestation",
@@ -120,5 +167,15 @@ export default {
   margin-top: 40px;
   font-size: 20px;
   font-weight: 700;
+}
+
+.button--auth {
+  margin: 50px;
+  width: fit-content;
+  height: 30px;
+  font-weight: 600;
+  font-size: 20px;
+  background-color: #f2a2a2;
+  border: #a2a2a2;
 }
 </style>
